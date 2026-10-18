@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050306">
-<title>Ashes of the Ninth Bell — Chapter I: The Drowned Road</title>
+<title>Ashes of the Ninth Bell</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
 html,body{margin:0;height:100%;background:#050306;color:#f3e9dc;font-family:Georgia,serif;overflow:hidden}
@@ -479,7 +479,7 @@ async function act(a,t){a.o.rotation.y=Math.atan2(t.x-a.x,t.y-a.y);a.o.userData.
  if(t.hp<=0){t.hp=0;sfx.die();burst(t.x,.8,t.y,t.team==='foe'?'rgba(60,255,200,.8)':'rgba(255,80,40,.8)',26,4,.35,1);t.o.visible=false;t.hb.remove()}
  if(t===B.boss&&!B.p2&&t.hp>0&&t.hp<=t.max/2){B.p2=true;t.mv=3;t.atk+=4;if(AC)bell(MI(30),T0(),.3,fG);doShake(.6);
   for(let k=0;k<10;k++){const x=(R()*BW)|0,y=(R()*BH)|0,i=y*BW+x;if(B.g[i]===0&&!uAt(x,y)){B.g[i]=2;rebuildTile(x,y)}}
-  await new Promise(r=>talk([{n:'Deacon Orm',t:'"The tide answers its priest!" Black water surges across the chapel floor. The Deacon grows faster and hungrier.'}],r))}}
+  await new Promise(r=>talk([{n:t.name,t:B.p2t||'"The tide answers its priest!" Black water surges across the chapel floor. The Deacon grows faster and hungrier.'}],r))}}
 
 function autoEnd(){if(B.units.filter(u=>u.team==='hero'&&u.hp>0).every(u=>u.acted&&u.moved))endTurn()}
 $('bWait').onclick=()=>{if(!B||B.busy||!B.sel)return;B.sel.moved=B.sel.acted=true;B.sel=null;clearOv();info('Waiting.');autoEnd()};
@@ -923,5 +923,128 @@ loadRun=(function(o){return function(){const s=JSON.parse(localStorage.getItem(X
 (function(){const mp=$('mPlay');const c=document.createElement('button');c.className='btn';c.textContent='Chapter II: The Foundry';mp.parentNode.insertBefore(c,mp.nextSibling);
  c.onclick=()=>{initAudio();mp.onclick();const x=X9();G.clues=3;G.f.well=1;G.f.camp=1;G.f.hounds=2;G.f.ivo=2;G.f.boss=1;x.hDead=1;x.hSp=1;x.horse=1;G.party=['sera','dain','mott','ivo'];
   G.wep=['dagger','bow','cannon'];G.p.mp=G.p.mpmax;x.lvl=4;G.p.max+=30;G.p.atk+=6;G.p.mpmax+=15;G.res.coin+=60;dlgOpen=false;$('dlg').classList.remove('on');enterCh2()}})();
+// ==== v6: CHAPTER III - THE TOWER OF NINE (FINALE) ====
+const POI3={village:[8,40],well:[4,44],camp:[52,10],hanged:[12,10],shrine:[48,36],chapel:[32,6],ridge:[52,10],oak:[22,24],cart:[40,22],des:[58,44],
+ stable:[5,38],widow:[11,42],merchant:[12,38],chests:[[6,6],[60,6],[30,30],[58,30],[20,44]]};
+const isC3=()=>!!(G&&G.x&&G.x.ch===3);
+Object.assign(LOOK,{
+ synod:{skin:0xd8c8b0,cloth:0x2a2238,trim:0xe0b040,hair:0xe8e8e8,eye:0xffe080,acc:'flame',h:1.8,wide:1.4},
+ bellguard:{skin:0x8a7050,cloth:0x3a3020,trim:0xc09040,hair:0x202020,eye:0xffd060,acc:'blade',h:1.15,wide:1.2}});
+groundColor=(function(o){return function(t,h){if(isC3()){if(t===2){_c.setHSL(.6,.35,.12+h*.05);return _c}if(t===0||t===6){_c.setHSL(.72,.12,.08+h*.05);return _c}}return o(t,h)}})(groundColor);
+buildWater=(function(o){return function(w){const n=world.children.length;o(w);if(!isC3())return;for(let i=n;i<world.children.length;i++){const m=world.children[i].material;if(m&&m.emissive){m.color.setHex(0x0a1020);m.emissive.setHex(0x6080ff);m.emissiveIntensity=.6;m.opacity=.9}}}})(buildWater);
+function skyC3(){scene.background.setHex(0x05050c);scene.fog.color.setHex(0x0c0c1a)}
+function darkCount(){const x=X9(),q=x.q2||{},r=x.q3||{};let d=0;
+ ['hessaWay','ivoWay','tobinWay'].forEach(k=>{if(['debt','burned','used'].includes(q[k]))d++});if(q.brideLie)d++;if(q.debtWay==='sold')d++;
+ if(r.faithWay==='burned')d++;if(r.tunerWay==='drank')d++;if(r.guardWay==='broke')d++;return d}
+function spawnKind11(kind,x,z,o={}){x=Math.round(x);z=Math.round(z);if(solid(tAt(x,z)))return null;
+ if(kind==='bellguard')return tint10(spawn('captain',x,z,Object.assign({hp:80,max:80,dmg:12,spd:2.1,aggro:8},o)),0x5a4420,0x402800);
+ if(kind==='hush')return tint10(spawn('drowned',x,z,Object.assign({hp:40,max:40,dmg:9,spd:2.6,aggro:9},o)),0x10142a,0x4060ff);
+ return spawn(kind,x,z,o)}
+const npcs11={};
+function clearNpcs11(){for(const k in npcs11){scene.remove(npcs11[k]);delete npcs11[k]}}
+function setupWorld11(){const x=X9(),P=POI,q=x.q3;clearEnts();for(const k in npcs9){scene.remove(npcs9[k]);delete npcs9[k]}chests9.forEach(c=>scene.remove(c.o));chests9.length=0;
+ for(const k in npcs10){scene.remove(npcs10[k]);delete npcs10[k]}clearNpcs11();
+ if(horse9)scene.remove(horse9);horse9=makeHorse();horse9.position.set(P.stable[0],0,P.stable[1]);scene.add(horse9);x.mounted=0;
+ P.chests.forEach((c,i)=>{if(x.open3.includes(i))return;const o=makeChest();o.position.set(c[0],0,c[1]);scene.add(o);chests9.push({o,i,x:c[0],z:c[1]})});
+ npcs9.merchant=propNpc('bandit',P.merchant[0],P.merchant[1],1.3);
+ if(!q.guard)npcs11.guard=propNpc('bellguard',P.shrine[0],P.shrine[1]+1.5);
+ if(!q.faith)npcs11.faith=propNpc('orm',P.hanged[0]+1.5,P.hanged[1],.7);
+ if((q.lamp||0)<3)npcs11.lamp=propNpc('mott',P.oak[0],P.oak[1],.6);
+ for(let k=0;k<6;k++)spawnKind11('hush',14+R()*40,14+R()*26);for(let k=0;k<4;k++)spawnKind11('bellguard',20+R()*34,12+R()*28);for(let k=0;k<3;k++)spawnKind11('hound',16+R()*40,20+R()*20);
+ if(!q.guard)for(let k=0;k<4;k++)spawnKind11('bellguard',P.shrine[0]+Math.cos(k*1.6)*3.5,P.shrine[1]+Math.sin(k*1.6)*3.5,{home:P.shrine,aggro:7});
+ if(!q.faith)for(let k=0;k<3;k++)spawnKind11('hush',P.hanged[0]+Math.cos(k*2.1)*4,P.hanged[1]+Math.sin(k*2.1)*4,{home:P.hanged,aggro:7})}
+setupWorld9=(function(o){return function(){if(isC3())return setupWorld11();o()}})(setupWorld9);
+newRun=(function(o){return function(){clearNpcs11();o()}})(newRun);
+function enterCh3(){const x=X9();endBattle();x.ch=3;x.q3={};x.c3=0;x.open3=[];x.tDead=0;x.tSp=0;x.zone='';
+ world.visible=true;hero.visible=true;motes.forEach(m=>m.s.visible=true);$('end').classList.remove('on');$('ctl').classList.add('on');$('hud').classList.add('on');
+ setPOI(POI3);skyC3();genWorld();setupWorld11();const p=G.p;p.x=POI.village[0];p.z=POI.village[1]-2.5;p.hp=p.max;p.mp=p.mpmax;G.score+=1500;
+ state='explore';music('explore');doShake(.3);saveRun();
+ talk([{n:'Chapter III \u00b7 The Tower of Nine',t:'Corrow, the smog city of nine great bells. Eight towers ring the city wall. The ninth stands at its heart, taller than the rest, and makes no sound at all.'},
+  {n:'Sera',t:'"My mother is inside that bell. My grandmother is the voice in Tobin\'s throat. The Synod will ring it at the new moon, three nights from now."'},
+  {n:'Dain Holloway',t:'Dain signs with his hands, the way deaf Bellguard do. "The tower has three locks. Three bell-tongues. The Bellguard hold one, the Drowned Faith another, and the Tuner keeps the last down in the Ashwell."'},
+  {n:'Objective',t:'Lantern Row is your camp. Gather the three bell-tongues across the Lower Wards, then climb the Tower of Nine. This is the last road. Your progress was saved.'}])}
+victory=(function(o){return function(){if(isC3())return finale();if(G&&G.x&&G.x.ch===2)G.x.c2won=1;return o()}})(victory);
+showEnd=(function(o){return function(){o();let b=$('nextCh');if(!b){b=document.createElement('button');b.id='nextCh';b.className='btn';$('end').appendChild(b)}
+ if(G&&G.x&&G.x.ch===2&&G.x.c2won){b.style.display='';b.textContent='Continue: Chapter III';b.onclick=()=>{initAudio();enterCh3()}}else b.style.display='none'}})(showEnd);
+startBattle=(function(o){return function(){if(!isC3()){o();if(B&&G.x&&G.x.ch===2)B.p2t='"The crucible remembers its master!" Slag spills across the foundry floor. Corvin tears free of the pour-chain, faster and hungrier.';return}const keep=G.party;const pick=['sera','dain','hessa','tobin','ivo','mott'].filter(k=>keep.includes(k)).slice(0,4);
+ G.party=pick;try{o()}finally{G.party=keep}
+ const b=B.boss;const nb=makeChar('synod');nb.position.copy(b.o.position);b.o.children.forEach(c=>{if(c.geometry&&c.geometry.type==='RingGeometry')nb.add(c.clone())});bGrp.remove(b.o);b.o=nb;bGrp.add(nb);
+ const r=G.x.q3;b.name='Abbess Ilse Vane';b.hp=b.max=(r.guardWay==='spared'?340:380);b.atk=r.tunerWay==='drank'?14:16;b.rmax=3;
+ B.p2t='"Ring, my daughter. RING." The Ninth Bell shudders overhead and blue ash floods the belfry. Your grandmother moves faster now, and something older is moving her.';
+ B.units.forEach(u=>{if(u.k==='drowned')u.name='Hushed'});
+ if(r.faithWay==='allied')B.units.filter(u=>u.team==='hero').forEach(u=>{u.max+=15;u.hp=u.max});
+ info('The belfry of the Tower of Nine. Abbess Ilse Vane, your grandmother, is chained beneath the Ninth Bell. Blue ash slows your steps. Every third turn the hushed dead rise from the floor.'+(r.faithWay==='allied'?' The Drowned Faith\'s blessing hardens your party (+15 HP).':'')+(r.guardWay==='spared'?' Captain Rook\'s men struck first. The Abbess starts wounded.':'')+(r.tunerWay==='drank'?' The Tuner\'s ember in your blood weakens her blows.':''))}})(startBattle);
+zoneOf=(function(o){return function(x,z){if(!isC3())return o(x,z);if(Math.hypot(x-POI.chapel[0],z-POI.chapel[1])<9)return['The Tower of Nine',.09];if(Math.hypot(x-POI.camp[0],z-POI.camp[1])<9)return['The Ashwell',.08];if(Math.hypot(x-POI.hanged[0],z-POI.hanged[1])<8)return['The Drowned Chapel',.07];if(Math.hypot(x-POI.shrine[0],z-POI.shrine[1])<8)return['The Bellguard Barracks',.07];return['The Lower Wards of Corrow',.05]}})(zoneOf);
+function tongue(t){const x=X9();x.c3++;G.score+=250;sfx.clue();burst(G.p.x,1.2,G.p.z,'rgba(140,170,255,1)',34,4,.4,1.2);gainXP(50);saveRun();talk([{n:'Bell-tongue '+x.c3+' of 3',t}])}
+function nearN11(k,r=2){const o=npcs11[k];return o&&o.parent&&near(o.position.x,o.position.z,r)}
+function gone11(k){if(npcs11[k]){scene.remove(npcs11[k]);delete npcs11[k]}}
+function quests11(){if(dlgOpen)return;const x=X9(),q=x.q3,P=POI,r=G.res,p=G.p;
+ if(!q.guard&&!homeFoes(P.shrine)&&nearN11('guard',2.4)){q.guard=1;
+  talk([{n:'Captain Rook',t:'A Bellguard captain kneels among his dead men, brass mask cracked open. He reads Dain\'s hands and laughs without sound. "Holloway. They said you\'d hang."'},
+   {n:'Dain Holloway',t:'"The Synod is ringing a bell with a living woman inside it," Dain signs. "Give us the tongue."',c:[['Spare Rook. Ask him to bring his men to the tower. (Boss starts wounded)',()=>{q.guardWay='spared'}],['Break his oath-mask and take the tongue. (Darker: +60 gold, +3 damage)',()=>{q.guardWay='broke';r.coin+=60;p.atk+=3}]]},
+   {n:'Captain Rook',t:()=>q.guardWay==='spared'?'"We were deafened so the bells could not madden us. Nobody said anything about the men who ring them." He hands over the tongue. "We\'ll be on the stairs."':'The mask splits. Under it, his ears are packed with lead. He doesn\'t fight you. He just watches you go.'}],
+   ()=>{gone11('guard');tongue('The Bellguard tongue, a bar of brass the length of your arm. Next: the Drowned Chapel, north-west.')})}
+ if(!q.faith&&!homeFoes(P.hanged)&&nearN11('faith',2.4)){q.faith=1;
+  talk([{n:'The Drowned Faith',t:'The last of the old priesthood stand waist-deep in black water. Their prioress has kelp in her hair. "The Ember is not dead, girl. It is sleeping. Ring the Ninth and it wakes. We have kept its tongue at the bottom of this font for five hundred years."'},
+   {n:'Sera',t:'She will not give it up willingly.',c:[['Swear on your blood that the god will not wake. (+15 HP for the party in the final battle)',()=>{q.faithWay='allied'}],['Burn the font dry and take it. (Darker: +20 max ember)',()=>{q.faithWay='burned';p.mpmax+=20;p.mp=p.mpmax}]]},
+   {n:'The prioress',t:()=>q.faithWay==='allied'?'"Grandmother Cinder swore the same oath. Keep it better than she did." She lifts the tongue out of the water.':'The water boils away. The priests scream and run. At the bottom of the font, in the steam, lies the tongue.'}],
+   ()=>{gone11('faith');tongue('The Drowned tongue, cold as river-stone. Next: the Ashwell, north-east.')})}
+}
+function quests11b(){if(dlgOpen)return;const x=X9(),q=x.q3,P=POI,r=G.res,p=G.p,C=P.camp;
+ if(!q.tuner&&!x.tSp&&near(C[0],C[1],8)){x.tSp=1;const h=spawn('captain',C[0],C[1]-2,{hp:320,max:320,dmg:15,spd:2.6,aggro:14,home:C});h.o.scale.setScalar(1.8);tint10(h,0x181830,0x6080ff);G.tuner=h;
+  music('boss');doShake(.4);if(AC)bell(MI(29),AC.currentTime,.3,fG);talk([{n:'The Ashwell',t:'A shaft into the earth, ringed with tuning forks taller than a man. Ash rises out of it like breath. A figure in a coat of hammered bell-bronze turns from the edge.'},{n:'The Tuner',t:'"Another Vane. Your mother sang a perfect A when we poured her. Let\'s hear what note you make."'}])}
+ const s=G.tuner;if(s&&!x.tDead){if(!s.p2&&s.hp>0&&s.hp<s.max/2){s.p2=1;s.spd=3.6;for(let k=0;k<3;k++)spawnKind11('hush',s.x+(k-1)*2,s.z+2,{aggro:12});doShake(.5);pop(s.x,s.z,'THE FORKS SCREAM','#8af',true)}
+  if(s.hp<=0||!ents.includes(s)){x.tDead=1;G.score+=700;gainXP(140);r.coin+=60;burst(s.x,1,s.z,'rgba(120,150,255,1)',50,6,.5,1.4);pop(s.x,s.z,'+60 gold','#ffd76a',true)}}
+ if(!q.tuner&&x.tDead&&near(C[0],C[1],3)){q.tuner=1;
+  talk([{n:'The Tuner',t:'He lies broken against the well-lip, the last tongue on a chain around his neck. Ember leaks out of him like light. "Drink it. You\'ll need it up there. Or let it go back down the well, where it came from."'},
+   {n:'Sera',t:'The ember glows on your fingertips.',c:[['Let it return to the earth. (+80 XP)',()=>{q.tunerWay='returned';gainXP(80)}],['Drink it. (Darker: +5 damage, full ember. The Abbess hits softer.)',()=>{q.tunerWay='drank';p.atk+=5;p.mp=p.mpmax}]]},
+   {n:'Tobin',t:'The voice in the boy, very quiet: "Come up, granddaughter. I will be waiting at the top. I am sorry for what I will make you do."'}],
+   ()=>tongue('The Tuner\'s tongue. All three are yours. The Tower of Nine stands to the north.'))}
+ if(x.c3>=3&&!q.boss&&near(P.chapel[0],P.chapel[1]+1,2.5)){q.boss=1;saveRun();
+  talk([{n:'The Tower of Nine',t:'Three tongues, three locks. The door opens on a stair that winds up into the dark for a thousand steps. At the top, the Ninth Bell hangs silent, black and enormous. Something inside it is breathing.'},
+   {n:'Abbess Ilse Vane',t:'Chained beneath it stands an old woman in Synod gold, the voice from Tobin\'s throat, but older, and harder. "I poured my own daughter into that bronze so the god would have a voice it loved. Ring it with me, Sera, and she lives forever. Refuse, and I will ring it with your bones."'}],()=>startBattle())}
+ if(!q.lamp&&nearN11('lamp')){q.lamp=1;talk([{n:'The Lamplighter',t:'An old woman lights lamps that never stay lit. "My son went up the tower to ring the eighth bell. He never came down. His lantern is still up on the wall-walk, east. Bring it back, so I know."'}])}
+ if(q.lamp===1&&near(P.des[0],P.des[1],2.2)){q.lamp=2;sfx.clue();talk([{n:'The wall-walk',t:'A cold lantern, a coat folded neatly, and a note: "Mam, they make us stuff our ears with wax. I took mine out. I wanted to hear it once." You pick up the lantern.'}])}
+ if(q.lamp===2&&nearN11('lamp')){q.lamp=3;talk([{n:'The Lamplighter',t:'"Well?"',c:[['Give her the lantern and the note. (+50 XP, +2 tonics)',()=>{gainXP(50);r.tonic+=2}],['Keep the note. Tell her he is a foreman now. (Kinder lie: +30 XP)',()=>{gainXP(30);q.lampLie=1}]]}],()=>gone11('lamp'))}
+}
+quests9=(function(o){return function(dt){if(!isC3())return o(dt);quests11();quests11b();if(nearNpc('merchant')){if(!G.x.mc){G.x.mc=1;shop9()}}else G.x.mc=0}})(quests9);
+updExplore=(function(o){return function(dt){if(!isC3()||!G)return o(dt);const x=X9(),s=x.open;x.open=x.open3;try{o(dt)}finally{x.open3=x.open;x.open=s}}})(updExplore);
+objective=(function(o){return function(){if(!isC3())return o();const x=X9(),q=x.q3,P=POI;
+ if(!q.guard)return['Take the Bellguard tongue at the barracks (south-east)',P.shrine];if(!q.faith)return['Take the Drowned tongue at the chapel (north-west)',P.hanged];
+ if(!q.tuner)return[x.tDead?'Take the tongue from the Tuner':'Face the Tuner at the Ashwell (north-east)',P.camp];return['Climb the Tower of Nine',[P.chapel[0],P.chapel[1]+1]]}})(objective);
+questLog=(function(o){return function(){if(!isC3())return o();const x=X9(),q=x.q3,L=[];const st=(d,t)=>L.push(`<div style="margin:6px 0;opacity:${d?.5:1}">${d?'\u2714':'\u25c6'} ${t}</div>`);
+ L.push('<h2>Chapter III: The Tower of Nine</h2>');st(q.guard,'Take the Bellguard tongue');st(q.faith,'Take the Drowned tongue');st(x.tDead,'Defeat the Tuner at the Ashwell');st(q.tuner,"Take the Tuner's tongue");st(0,'Climb the Tower of Nine and face the Abbess');
+ L.push('<h2>Side quests</h2>');st(q.lamp===3,q.lamp?'The Lamplighter: '+(q.lamp===1?'find the lantern on the wall-walk (south-east)':q.lamp===2?'return to the lamplighter':(q.lampLie?'you kept the note':'you gave her the truth')):'??? (an old woman with a lamp, centre)');
+ L.push(`<p style="font-size:13px">Tongues: ${x.c3}/3 \u00b7 Chests: ${x.open3.length}/5 \u00b7 Party: ${G.party.map(k=>HEROES[k].name).join(', ')}</p>`);$('qL').innerHTML=L.join('')}})(questLog);
+drawMap=(function(o){return function(){if(!isC3())return o();const c=$('mapc'),g=c.getContext('2d'),s=5;const col={0:'#1a1a26',1:'#0e0e16',2:'#2a3a6a',3:'#4a4450',4:'#3a3440',5:'#2c2a3a',6:'#1c1a24',7:'#3a3440',8:'#2a1a3a'};
+ for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){g.fillStyle=col[map[y*MW+x]]||'#111';g.fillRect(x*s,y*s,s,s)}
+ const dot=(p,cl,l)=>{g.fillStyle=cl;g.beginPath();g.arc(p[0]*s+2,p[1]*s+2,5,0,6.3);g.fill();g.fillStyle='#fff';g.font='bold 10px Georgia';g.fillText(l,p[0]*s+8,p[1]*s+5)};
+ dot(POI.village,'#ffc060','Lantern Row');dot(POI.shrine,'#c09040','Barracks');dot(POI.hanged,'#40c0a0','Chapel');dot(POI.camp,'#6080ff','Ashwell');dot(POI.chapel,'#ffffff','Tower');
+ g.fillStyle='#fff';g.beginPath();g.arc(G.p.x*s+2,G.p.z*s+2,4,0,6.3);g.fill();$('mapk').textContent='Objective: '+objective()[0]}})(drawMap);
+loadRun=(function(o){return function(){const s=JSON.parse(localStorage.getItem(XK)||'null');if(s&&s.ch===3){setPOI(POI3);skyC3();if(G)G.x=Object.assign(X9(),s,{mounted:0,mc:0,zone:''})}o();
+ if(isC3()){setPOI(POI3);skyC3();$('bH').style.display=G.x.horse?'flex':'none';hud()}}})(loadRun);
+function finale(){endBattle();state='end';const x=X9(),r=x.q3,d=darkCount();G.score+=3000+G.party.length*250;
+ const has=k=>G.party.includes(k);
+ const ep=[];if(has('dain'))ep.push(r.guardWay==='spared'?'Dain Holloway walks the Bellguard out of their barracks and teaches them to sign. They stop calling it a curse.':'Dain Holloway leaves Corrow alone. He still signs to himself sometimes, to no one.');
+ if(has('mott'))ep.push('Mother Mott opens a surgery in the old Synod hall and charges the foundry lords triple.');
+ if(has('ivo'))ep.push(x.q2&&x.q2.ivoWay==='burned'?'Ivo melts down his hand-cannon and never fires another shot. He does not visit you.':'Ivo casts a small bell for each of his brothers and hangs them on the city wall. They ring in the wind.');
+ if(has('hessa'))ep.push(x.q2&&x.q2.hessaWay==='debt'?'Hessa Kell leaves for the slag river without a word. Your debt, she decides, is paid. Barely.':'Hessa Kell poles a new ferry across the river and takes no fare from foundry orphans.');
+ if(has('tobin'))ep.push('Tobin speaks in his own voice now. '+(x.q2&&x.q2.tobinWay==='used'?'It is hoarse, and he does not like to use it near you.':'It is high and bright. He will not stop talking.'));
+ let title,body;
+ const choose=(w)=>{$('eT').textContent=title=w==='silence'?'The Bell Breaks':w==='ring'?'The Ninth Bell Rings':'Grandmother Cinder';
+  body=w==='silence'?'Sera pours every drop of ember she has into the bronze, and the Ninth Bell cracks from crown to lip. Inside, curled like a sleeper, is a woman with Sera\'s face. She opens her eyes.<br><br>"You came," your mother says. "You didn\'t ring it."<br><br>Across Corrow, the eight bells fall silent one by one. The ash stops rising. Magic grows thin and strange, but nobody is poured into bronze again.'
+  :w==='ring'?'Sera takes the rope. The Ninth Bell speaks, and every person in Corrow hears a woman singing a perfect A, forever.<br><br>Under the city, something vast turns over in its sleep and remembers that it was a god.<br><br>The Synod kneels to you. Your mother never stops singing. In a thousand years, people will try to build the god again out of light.'
+  :'Sera lays her hand on the bronze and speaks the name the Drowned Faith taught her: Ysolde. Grandmother Cinder. The first witch answers from inside the metal and takes the bell\'s hunger into herself.<br><br>Your mother steps out of the cracked bronze. Your grandmother\'s chains are empty. The ninth bell stays silent, waiting, and the Drowned Faith guard it to this day.';
+  $('eP').innerHTML=body+'<br><br>'+ep.join('<br>')+'<br><br><b>Ashes of the Ninth Bell</b> \u2014 The End.<br><span style="font-size:13px;opacity:.7">Darker choices made: '+d+'</span>';
+  G.score+=w==='silence'?800:w==='cinder'?1200:400;x.ending=w;finishRun();music('menu');showEnd()};
+ const opts=[['Break the bell and free your mother.',()=>choose('silence')],['Ring the Ninth Bell. (Darkest)',()=>choose('ring')]];
+ if(r.faithWay==='allied'&&d<=3)opts.push(['Call Grandmother Cinder by her true name. (Secret ending)',()=>choose('cinder')]);
+ sfx.clue();doShake(.6);if(AC)bell(MI(26),AC.currentTime,.4,fG);
+ talk([{n:'Abbess Ilse Vane',t:'Your grandmother falls to her knees beneath the bell. The chains go slack. "Then you choose, granddaughter. I never could."'},
+  {n:'The Ninth Bell',t:'Something inside the bronze knocks, three times, like a hand.',c:opts}])}
+(function(){const mp=$('mPlay');const c=document.createElement('button');c.className='btn';c.textContent='Chapter III: The Tower';const c2=[...mp.parentNode.children].find(b=>b.textContent==='Chapter II: The Foundry')||mp;mp.parentNode.insertBefore(c,c2.nextSibling);
+ c.onclick=()=>{initAudio();mp.onclick();const x=X9();G.clues=3;Object.assign(G.f,{well:1,camp:1,hounds:2,ivo:2,boss:1});x.hDead=1;x.hSp=1;x.horse=1;G.party=['sera','dain','mott','ivo','hessa','tobin'];
+  x.q2={hessa:1,pit:2,tobin:1,boss:1,ivoWay:'buried',hessaWay:'vow',tobinWay:'kind'};x.sDead=1;x.c2=3;x.open2=[];
+  G.wep=['dagger','bow','cannon'];x.lvl=7;G.p.max+=60;G.p.atk+=12;G.p.mpmax+=30;G.p.mp=G.p.mpmax;G.res.coin+=120;dlgOpen=false;$('dlg').classList.remove('on');enterCh3()}})();
 </script>
 </body></html>
