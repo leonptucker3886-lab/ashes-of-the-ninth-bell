@@ -692,6 +692,125 @@ rd.render=function(s,c){const dt=1/60;_t8+=dt;WIND.value=_t8;if(WTEX){WTEX.offse
     talk([{n:'The Magic Well',t:'The water is not water. It is ember, the god\'s blood pooled under the marsh. Sera drinks, and her veins light from the inside.'},{n:'Sera',t:'"They bled this out of me for twenty years. Now it is mine again." The EMBER button is awake. Fire costs ember; resting at the fire refills it.'}])}}}
  _render8(s,c)};
 
+// ==== v4: FIRST 30 MINUTES - mount, weapons, zones, quests, progression ====
+Object.assign(POI,{stable:[POI.village[0]-3,POI.village[1]-3],widow:[POI.village[0]+3,POI.village[1]-2],merchant:[POI.village[0]+3,POI.village[1]+2],
+ ridge:[44,40],oak:[30,22],cart:[42,28],des:[6,38],chests:[[26,14],[48,20],[14,32],[50,44],[38,16]]});
+WEP.crossbow={n:'CROSSBOW',cd:1.0,sp:20,m:1.9,col:'rgba(200,230,255,1)'};
+WEP.flail={n:'BELL-FLAIL',cd:.85,sp:7,m:2.4,col:'rgba(255,200,120,1)',short:1};
+const SWORD=['Rusted Sword','Iron Sword','Bellsteel Sword'];
+const XK='aotnb_x4';
+const X9=()=>G.x||(G.x={lvl:1,xp:0,swt:0,horse:0,mounted:0,open:[],q:{},zone:'',hDead:0,hSp:0,mc:0});
+// --- extra world features ---
+genWorld=(function(o){return function(){o();const P=POI;carve(P.hanged[0],P.hanged[1],P.ridge[0],P.ridge[1]);carve(P.village[0],P.village[1],P.des[0],P.des[1]);
+ carve(P.camp[0],P.camp[1],P.oak[0],P.oak[1]);carve(P.oak[0],P.oak[1],P.cart[0],P.cart[1]);clearAt(P.ridge[0],P.ridge[1],4,0);clearAt(P.oak[0],P.oak[1],2,0);clearAt(P.cart[0],P.cart[1],2);clearAt(P.des[0],P.des[1],2,0);
+ P.chests.forEach(c=>clearAt(c[0],c[1],1,0));buildWorld()}})(genWorld);
+const M9=c=>new THREE.MeshLambertMaterial({color:c});
+function makeHorse(){const g=new THREE.Group(),dk=M9(0x1a1414),mane=new THREE.MeshLambertMaterial({color:0x2a0a04,emissive:0xff4a10,emissiveIntensity:.5});
+ const add=(geo,m,x,y,z,rx=0)=>{const s=new THREE.Mesh(geo,m);s.position.set(x,y,z);s.rotation.x=rx;s.castShadow=true;g.add(s);return s};
+ add(new THREE.BoxGeometry(.5,.45,1.2),dk,0,.85,0);add(new THREE.BoxGeometry(.26,.6,.3),dk,0,1.2,.55,-.5);add(new THREE.BoxGeometry(.24,.24,.5),dk,0,1.45,.8);
+ add(new THREE.BoxGeometry(.06,.5,.6),mane,0,1.3,.45,-.5);add(new THREE.BoxGeometry(.08,.08,.5),mane,0,.95,-.75,.6);
+ const eye=new THREE.MeshBasicMaterial({color:0xff7a20});add(new THREE.SphereGeometry(.035),eye,.12,1.52,.92);add(new THREE.SphereGeometry(.035),eye,-.12,1.52,.92);
+ const legs=[];[[.17,.45],[-.17,.45],[.17,-.45],[-.17,-.45]].forEach(([x,z])=>{const p=new THREE.Group();p.position.set(x,.68,z);const l=new THREE.Mesh(new THREE.BoxGeometry(.1,.68,.1),dk);l.position.y=-.34;l.castShadow=true;p.add(l);g.add(p);legs.push(p)});
+ g.userData.legs=legs;g.userData.t=0;return g}
+function animHorse(h,dt,mv){h.userData.t+=dt*(mv?14:2);h.userData.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(h.userData.t+(i%2?Math.PI:0)+(i>1?1:0))*.7:0);h.children[0].position.y=.85+(mv?Math.abs(Math.sin(h.userData.t))*.06:0)}
+function makeChest(){const g=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(.6,.35,.4),M9(0x4a2a14));b.position.y=.18;const l=new THREE.Mesh(new THREE.BoxGeometry(.62,.12,.42),new THREE.MeshLambertMaterial({color:0x6a4a20,emissive:0x8a5a10,emissiveIntensity:.4}));l.position.y=.42;g.add(b,l);return g}
+function propNpc(kind,x,z,tint){const o=npc(kind,x,z);if(tint)o.traverse(m=>{if(m.material&&m.material.color){m.material=m.material.clone();m.material.color.multiplyScalar(tint)}});return o}
+let horse9=null;const chests9=[],npcs9={};
+function setupWorld9(){const x=X9(),P=POI;if(horse9)scene.remove(horse9);horse9=makeHorse();horse9.position.set(P.stable[0],0,P.stable[1]);scene.add(horse9);
+ chests9.forEach(c=>scene.remove(c.o));chests9.length=0;P.chests.forEach((c,i)=>{if(x.open.includes(i))return;const o=makeChest();o.position.set(c[0],0,c[1]);scene.add(o);chests9.push({o,i,x:c[0],z:c[1]})});
+ for(const k in npcs9){scene.remove(npcs9[k]);delete npcs9[k]}
+ npcs9.stable=propNpc('archer',P.stable[0]+1.2,P.stable[1],.8);npcs9.widow=propNpc('mott',P.widow[0],P.widow[1],.6);npcs9.merchant=propNpc('bandit',P.merchant[0],P.merchant[1],1.3);
+ if(!x.q.des)npcs9.des=propNpc('captain',P.des[0],P.des[1],.7);
+ const cart=new THREE.Group();const cb=new THREE.Mesh(new THREE.BoxGeometry(1.4,.5,.8),M9(0x3a2a1a));cb.position.y=.6;cart.add(cb);[[-.5,.4],[.5,.4],[-.5,-.4],[.5,-.4]].forEach(([a,b])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.08,10),M9(0x2a1a10));w.rotation.x=Math.PI/2;w.position.set(a,.3,b);cart.add(w)});
+ cart.position.set(P.cart[0],0,P.cart[1]);scene.add(cart);npcs9.cart=cart;
+ for(let k=0;k<4;k++)spawnKind9(k%2?'ghoul':'ghoul',8+R()*14,30+R()*12);for(let k=0;k<3;k++)spawnKind9('bellknight',40+R()*12,30+R()*10);for(let k=0;k<3;k++)spawnKind9('ghoul',22+R()*14,12+R()*16)}
+function spawnKind9(kind,x,z,o={}){x=Math.round(x);z=Math.round(z);if(solid(tAt(x,z)))return null;
+ if(kind==='ghoul'){const e=spawn('drowned',x,z,Object.assign({hp:22,max:22,dmg:6,spd:4.6,aggro:9,k9:'ghoul'},o));e.o.scale.set(.85,.75,.85);e.o.traverse(m=>{if(m.material&&m.material.color){m.material=m.material.clone();m.material.color.setHex(0x6a7a5a);if(m.material.emissive)m.material.emissive.setHex(0x203010)}});return e}
+ if(kind==='bellknight'){const e=spawn('captain',x,z,Object.assign({hp:90,max:90,dmg:12,spd:1.5,aggro:6,k9:'knight'},o));e.o.scale.setScalar(1.15);e.o.traverse(m=>{if(m.material&&m.material.color){m.material=m.material.clone();m.material.color.setHex(0x8a7a50);if(m.material.emissive){m.material.emissive.setHex(0x3a2a08)}}});return e}
+ return spawn(kind,x,z,o)}
+newRun=(function(o){return function(){o();G.wep=G.wep||['dagger'];G.sw=G.sw||0;G.p.mp=G.f.well?G.p.mp:0;X9();setupWorld9();
+}})(newRun);
+function gainXP(n){const x=X9(),p=G.p;x.xp+=n;while(x.xp>=x.lvl*45){x.xp-=x.lvl*45;x.lvl++;p.max+=10;p.mpmax+=5;p.atk+=2;p.hp=p.max;p.mp=p.mpmax;sfx.heal();if(AC)bell(MI(62),AC.currentTime,.15,fG);
+ burst(p.x,1.2,p.z,'rgba(255,220,120,1)',36,4,.4,1.2);doShake(.25);pop(p.x,p.z,'LEVEL '+x.lvl+'!  +HP +MP +DMG','#ffd76a',true)}}
+hurt=(function(o){return function(e,d){o(e,d);if(e.hp<=0&&!e._xp&&e.team==='foe'&&G){e._xp=1;const big=e.harrow?60:e.k9==='knight'?14:e.kind==='captain'?20:4;const g=big+((R()*4)|0);G.res.coin+=g;pop(e.x,e.z+.5,'+'+g+' gold','#ffd76a');
+ gainXP(e.harrow?150:e.k9==='knight'?35:e.kind==='captain'?50:e.k9==='ghoul'?12:15)}}})(hurt);
+press=(function(o){return function(k){if(state!=='explore'||dlgOpen||!G)return;const x=X9(),p=G.p;
+ if(k==='H'){if(!x.horse)return;if(x.mounted){x.mounted=0;horse9.position.set(p.x+.8,0,p.z);pop(p.x,p.z,'Dismounted','#ccc');sfx.step();return}
+  if(Math.hypot(horse9.position.x-p.x,horse9.position.z-p.z)>2.5){horse9.position.set(p.x,0,p.z-1)}x.mounted=1;sfx.pick();if(AC)noise(AC.currentTime,.3,{g:.2,f:500});pop(p.x,p.z,'Riding Cinder','#ff9a5a',true);return}
+ const atFire=near(POI.village[0],POI.village[1]+1,2.2);if(atFire&&(k==='B'||k==='E'))return;if(atFire&&k==='A'){x.lastCamp=performance.now();return o(k)}
+ if(x.mounted&&(k==='A'||k==='B'||k==='E')){if(k==='A'&&near(POI.village[0],POI.village[1]+1,2.2))return o(k);return pop(p.x,p.z,'Dismount to fight (ride through foes to trample)','#f96')}
+ const before=shots.length;o(k);if(k==='B'&&shots.length>before){const s=shots[shots.length-1],w=G.wep[G.sw];scene.remove(s.o);s.o=projMesh(w);s.o.position.set(s.x,.9,s.z);s.o.rotation.y=Math.atan2(s.vx,s.vz);scene.add(s.o);s.spin=(w==='dagger'||w==='flail')?1:0;if(WEP[w].short)s.t=1.0}}})(press);
+function hoof(){if(!AC)return;const t=AC.currentTime;noise(t,.05,{g:.18,f:350});noise(t+.09,.05,{g:.12,f:300})}
+function zoneOf(x,z){if(Math.hypot(x-POI.chapel[0],z-POI.chapel[1])<10)return['The Drowned Chapel',.085];if(x>36&&z>26)return['Gallows Ridge',.07];if(x>20)return['Ashwood',.06];return['Marsh Road',.048]}
+let hoofT=0;
+updExplore=(function(o){return function(dt){o(dt);if(!G||state!=='explore')return;const x=X9(),p=G.p;
+ let mx=joy.dx,mz=joy.dy;if(keys.w||keys.arrowup)mz=-1;if(keys.s||keys.arrowdown)mz=1;if(keys.a||keys.arrowleft)mx=-1;if(keys.d||keys.arrowright)mx=1;const ml=Math.hypot(mx,mz),mv=ml>.15&&!dlgOpen;
+ if(horse9){if(x.mounted){if(mv){tryMove(p,mx/Math.max(1,ml)*4.8*dt,mz/Math.max(1,ml)*4.8*dt);hoofT-=dt;if(hoofT<=0){hoofT=.28;hoof()}
+    for(const e of ents)if(e.team==='foe'&&!e.harrow&&Math.hypot(e.x-p.x,e.z-p.z)<1&&!(e.tr>0)){e.tr=.8;hurt(e,8+x.lvl*2);burst(e.x,.4,e.z,'rgba(120,90,60,.9)',10,3)}}
+   ents.forEach(e=>{if(e.tr>0)e.tr-=dt});horse9.position.set(p.x,0,p.z);horse9.rotation.y=hero.rotation.y;hero.position.set(p.x,.62,p.z);heroLight.position.y=2.8}
+  animHorse(horse9,dt,x.mounted&&mv)}
+ const[zn,fd]=zoneOf(p.x,p.z);if(scene.fog)scene.fog.density=lerp(scene.fog.density,fd,dt*.8);if(zn!==x.zone){const first=x.zone==='';x.zone=zn;if(!first){pop(p.x,p.z-1,'— '+zn+' —','#e8c27a',true);if(AC)bell(MI(43),AC.currentTime,.12,fG)}}
+ // chests
+ for(let i=chests9.length-1;i>=0;i--){const c=chests9[i];c.o.rotation.y+=dt*.3;if(Math.hypot(c.x-p.x,c.z-p.z)<1.3){scene.remove(c.o);chests9.splice(i,1);x.open.push(c.i);const g=12+((R()*15)|0);G.res.coin+=g;G.res.herb+=2;sfx.clue();
+   burst(c.x,.8,c.z,'rgba(255,210,90,1)',24,3);let msg='Chest: +'+g+' gold, +2 herbs';if(c.i===0){unlockWep('crossbow','CROSSBOW FOUND');msg+=', a CROSSBOW'}if(c.i===3){G.res.tonic+=2;msg+=', +2 tonics'}pop(c.x,c.z,msg,'#ffd76a',true);gainXP(10)}}
+ // Harrow mini-boss
+ const R0=POI.ridge;if(!x.hDead&&!x.hSp&&G.f.well&&near(R0[0],R0[1],9)){x.hSp=1;G.harrowE=spawn('captain',R0[0],R0[1],{hp:280,max:280,dmg:13,spd:2.3,aggro:14,harrow:1,home:R0});G.harrowE.o.scale.setScalar(1.35);
+  ['bandit','archer','bandit'].forEach((k,i)=>spawn(k,R0[0]+Math.cos(i*2)*3,R0[1]+Math.sin(i*2)*3,{home:R0,aggro:10}));music('boss');doShake(.4);if(AC)bell(MI(31),AC.currentTime,.3,fG);
+  talk([{n:'Gallows Ridge',t:'Twelve gibbets creak on the ridge. Under them waits a giant in bell-iron mail, a gallows-rope knotted around his fist.'},{n:'Harrow, the Bandit Chief',t:'"The Deacon pays me a silver bell per throat, little Vane. Yours is worth the whole tower."'}])}
+ const h=G.harrowE;if(h&&!x.hDead){if(!h.p2&&h.hp>0&&h.hp<h.max/2){h.p2=1;h.spd=3.4;h.dmg+=5;doShake(.5);if(AC)bell(MI(29),AC.currentTime,.3,fG);for(let k=0;k<3;k++)spawn(k?'bandit':'archer',h.x+(k-1)*2,h.z+2,{home:R0,aggro:12});pop(h.x,h.z,'HARROW ENRAGES','#f44',true)}
+  if(h.hp<=0||!ents.includes(h)){x.hDead=1;G.score+=600;burst(h.x,1,h.z,'rgba(255,90,40,1)',50,6,.5,1.4);
+   talk([{n:'Harrow',t:'He laughs blood. "The Deacon...already has your mother\'s bell. Ask him...how she sounded." He dies grinning.'},{n:'Sera',t:'On his body: the chapel\'s iron key and a ledger of names. Children of Hollowmere. Paid in bell-silver. The way to the Drowned Chapel is open.'}])}}
+ quests9(dt)}})(updExplore);
+function nearNpc(k,r=1.8){const o=npcs9[k];return o&&o.parent&&near(o.position.x,o.position.z,r)}
+function quests9(dt){if(dlgOpen)return;const x=X9(),q=x.q,P=POI,r=G.res,p=G.p;
+ if(!x.horse&&nearNpc('stable')){if(r.wood>=4){r.wood-=4;x.horse=1;$('bH').style.display='flex';sfx.clue();gainXP(20);
+   talk([{n:'Stablehand',t:'"Good wood. She\'s yours." The black mare steps out, ember-light in her mane and eyes. "Ash-horses were bred on the god\'s coal. Ride her through bandits. She won\'t stop."'},{n:'Cinder joins',t:'Tap 🐎 to mount or dismount. Mounted you ride twice as fast and trample weak foes, but you must dismount to swing a sword.'}])}
+  else if(!q.st){q.st=1;talk([{n:'Stablehand',t:'"Cinder, the ash-horse, still lives. Bring me 4 wood to mend her stall and she\'s yours." (Strike trees to chop wood.)'}])}}
+ if(!q.ring&&nearNpc('widow')){q.ring=1;talk([{n:'Widow Agathe',t:'"My husband hangs from the great dead oak in Ashwood. The bandits took his finger for the ring. Bring it back and I can bury him whole."'}])}
+ if(q.ring===1&&near(P.oak[0],P.oak[1],2)){q.ring=2;sfx.clue();talk([{n:'The dead oak',t:'A body turns slowly on the rope. In a crow\'s nest above it, a gold ring on a cut-off finger. You take it.'}])}
+ if(q.ring===2&&nearNpc('widow')){q.ring=3;talk([{n:'Widow Agathe',t:'"Did you find it?"',c:[['Give her the ring. (+30 gold, +40 XP)',()=>{r.coin+=30;gainXP(40)}],['Keep it. It hums with bell-silver. (Darker: +3 damage, -10 max HP)',()=>{p.atk+=3;p.max-=10;p.hp=Math.min(p.hp,p.max);q.ringKept=1}]]}])}
+ if(!q.cart&&near(P.cart[0],P.cart[1],5)){q.cart=1;for(let k=0;k<4;k++)spawnKind9('ghoul',P.cart[0]+Math.cos(k*1.6)*3.5,P.cart[1]+Math.sin(k*1.6)*3.5,{aggro:12});music('danger');
+  talk([{n:'The plague cart',t:'A cart heaped with bodies, sealed under a priest\'s wax. The bodies begin to move.'}])}
+ if(q.cart===1&&!foesNear(P.cart[0],P.cart[1],9)&&near(P.cart[0],P.cart[1],2)){q.cart=2;
+  talk([{n:'The plague cart',t:'The dead are quiet now. A strongbox is nailed under the corpses.',c:[['Burn the cart and its dead. (+60 XP)',()=>{gainXP(60);burst(P.cart[0],1,P.cart[1],'rgba(255,120,30,1)',40,4,.5,1.5);if(npcs9.cart)scene.remove(npcs9.cart)}],['Dig through the bodies for the strongbox. (Darker: +45 gold, +2 tonics, -15 HP)',()=>{r.coin+=45;r.tonic+=2;p.hp=Math.max(1,p.hp-15)}]]}])}
+ if(!q.des&&nearNpc('des',2.2)){q.des=1;talk([{n:'The deserter',t:'A bell-knight hides in the reeds, armor caked in mud. "I ran from the Deacon\'s choir. I saw what they do to the children. Please. There\'s a bounty on me in Cindermouth."'},
+  {n:'Sera',t:'He clutches a bell-chain flail.',c:[['Let him go. He gives you his flail. (+50 XP)',()=>{gainXP(50);q.desWay='spared';unlockWep('flail','BELL-FLAIL GAINED');if(npcs9.des)scene.remove(npcs9.des)}],['Take his head for the bounty. (Darker: +60 gold, flail)',()=>{r.coin+=60;q.desWay='killed';unlockWep('flail','BELL-FLAIL TAKEN');if(npcs9.des){burst(P.des[0],1,P.des[1],'rgba(160,0,0,1)',30,3);scene.remove(npcs9.des)}}]]}])}
+ if(nearNpc('merchant')){if(!x.mc){x.mc=1;shop9()}}else x.mc=0}
+function shop9(){const x=X9(),r=G.res,p=G.p,nx=x.swt<2?SWORD[x.swt+1]:null,cost=[0,30,70][x.swt+1],ore=[0,3,6][x.swt+1];
+ talk([{n:'Pell the Merchant',t:`"Coin for steel, witch." You carry ${r.coin} gold, ${r.ore} ore.`,c:[['Tonic (8 gold)',()=>{if(r.coin>=8){r.coin-=8;r.tonic++;sfx.pick()}else pop(p.x,p.z,'Not enough gold','#f66')}],
+  [nx?`Reforge into ${nx} (${cost} gold + ${ore} ore)`:'Your blade is already Bellsteel',()=>{if(!nx)return;if(r.coin>=cost&&r.ore>=ore){r.coin-=cost;r.ore-=ore;x.swt++;p.atk+=6;sfx.clue();doShake(.2);pop(p.x,p.z,SWORD[x.swt].toUpperCase(),'#ffd76a',true)}else pop(p.x,p.z,'Need more gold or ore','#f66')}],
+  ['Bolts and arrows tipped in salt (+2 damage, 25 gold)',()=>{if(r.coin>=25&&!x.salt){r.coin-=25;x.salt=1;p.atk+=2;sfx.pick()}else pop(p.x,p.z,x.salt?'Already bought':'Not enough gold','#f66')}],['Leave',()=>{}]]}])}
+setSecModel=(function(o){return function(){o();if(!hero||!hero.userData.sec||!G)return;const s=hero.userData.sec,w=G.wep[G.sw];
+ if(w==='crossbow'){const a=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.45),M9(0x4a3020));a.position.z=.15;const b=new THREE.Mesh(new THREE.BoxGeometry(.5,.03,.04),M9(0x6a6a70));b.position.z=.32;s.add(a,b)}
+ if(w==='flail'){const h=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.35,6),M9(0x3a2a1a));const bl=new THREE.Mesh(new THREE.SphereGeometry(.1,8,6),new THREE.MeshLambertMaterial({color:0x8a7040,emissive:0x3a2008}));bl.position.y=-.4;s.add(h,bl)}}})(setSecModel);
+objective=(function(o){return function(){const x=X9(),f=G.f;if(!x.horse)return['Bring 4 wood to the stablehand and claim Cinder',POI.stable];
+ if(G.clues>=3&&f.well&&!x.hDead)return['Kill Harrow the Bandit Chief on Gallows Ridge (south-east)',POI.ridge];return o()}})(objective);
+triggers=(function(o){return function(){const x=X9(),f=G.f;if(!x.hDead&&!f.boss){f.boss=1;o();f.boss=0}else o()}})(triggers);
+hud=(function(o){return function(){o();const x=X9();$('res').textContent+=`  Lv${x.lvl} (${x.xp}/${x.lvl*45})`;$('party').innerHTML=`<b style="color:#e8c27a">${x.zone}</b><br>⚔ ${SWORD[x.swt]}<br>`+$('party').innerHTML}})(hud);
+function questLog(){const x=X9(),q=x.q,f=G.f,L=[];const st=(d,t)=>L.push(`<div style="margin:6px 0;opacity:${d?.5:1}">${d?'✔':'◆'} ${t}</div>`);
+ L.push('<h2>Main: The Drowned Road</h2>');st(x.horse,'Claim Cinder the ash-horse at the stable');st(f.well,'Drink from the Magic Well (north-west)');st(G.clues>=1,'Free the prisoner at the bandit camp');st(G.clues>=2,'Answer the cries at the Hanged Tree');st(G.clues>=3,'Face what waits at the Drowned Shrine');st(x.hDead,'Kill Harrow on Gallows Ridge');st(0,'Enter the Drowned Chapel and end the Deacon');
+ L.push('<h2>Side quests</h2>');st(q.ring===3,q.ring?'The Hanged Man\'s Ring: '+(q.ring===1?'find the dead oak in Ashwood':q.ring===2?'return to Widow Agathe':(q.ringKept?'kept the ring':'returned the ring')):'??? (speak to the widow in the village)');
+ st(q.cart===2,q.cart?'The Plague Cart: '+(q.cart===2?'resolved':'destroy the risen dead'):'??? (something on the Ashwood road)');st(!!q.des,q.des?'The Deserter: '+q.desWay:'??? (the reeds south-west of the village)');
+ L.push(`<p style="font-size:13px">Chests found: ${x.open.length}/5 · Weapons: ${G.wep.map(w=>WEP[w].n).join(', ')}</p>`);$('qL').innerHTML=L.join('')}
+(function(){const st=document.createElement('style');st.textContent=`#bH{width:46px;height:46px;right:172px;bottom:calc(env(safe-area-inset-bottom) + 132px);font-size:22px;display:none}#qL{max-width:520px;text-align:left;font-size:15px;max-height:60vh;overflow:auto}#qL h2{margin:10px 0 4px}`;document.head.appendChild(st);
+ const b=document.createElement('div');b.className='cb';b.id='bH';b.textContent='🐎';$('ctl').appendChild(b);
+ b.addEventListener('touchstart',ev=>{ev.preventDefault();ev.stopPropagation();initAudio();press('H')},{passive:false});b.addEventListener('mousedown',()=>{initAudio();press('H')});
+ const qb=document.createElement('button');qb.id='sbQ';qb.textContent='Quests';$('sbar').insertBefore(qb,$('sbMap'));
+ const qo=document.createElement('div');qo.className='ov';qo.id='qov';qo.innerHTML='<h1 style="font-size:30px">Quest Log</h1><div id="qL"></div><button class="btn" id="qBack">Back</button>';document.body.appendChild(qo);ovs.push('qov');
+ qb.onclick=()=>{if(state!=='explore'||dlgOpen||!G)return;state='pause';questLog();show('qov')};$('qBack').onclick=()=>{show(null);state='explore'};
+ addEventListener('keydown',e=>{if(e.key==='h')press('H')})})();
+saveRun=(function(o){return function(){o();const x=Object.assign({},X9(),{mounted:0});localStorage.setItem(XK,JSON.stringify(x))}})(saveRun);
+loadRun=(function(o){return function(){o();if(!G)return;const s=JSON.parse(localStorage.getItem(XK)||'null');if(s){const px=G.p.atk;G.x=Object.assign(X9(),s,{mounted:0,hSp:s.hDead?1:0,mc:0,zone:''})}
+ setupWorld9();$('bH').style.display=G.x.horse?'flex':'none';setSecModel();hud()}})(loadRun);
+
+function projMesh(w){const g=new THREE.Group(),steel=new THREE.MeshStandardMaterial({color:0xd0d4dc,metalness:.9,roughness:.25}),wood=M9(0x5a3a1a);let m;
+ if(w==='dagger'){m=new THREE.Mesh(new THREE.BoxGeometry(.05,.02,.32),steel);const hd=new THREE.Mesh(new THREE.BoxGeometry(.06,.04,.1),wood);hd.position.z=-.18;g.add(m,hd)}
+ else if(w==='bow'||w==='crossbow'){m=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,w==='bow'?.6:.4,4),wood);m.rotation.x=Math.PI/2;const tip=new THREE.Mesh(new THREE.ConeGeometry(.03,.08,4),steel);tip.rotation.x=Math.PI/2;tip.position.z=w==='bow'?.32:.22;g.add(m,tip)}
+ else if(w==='cannon'){g.add(new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),new THREE.MeshStandardMaterial({color:0x222226,metalness:.8,roughness:.4})))}
+ else{g.add(new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),new THREE.MeshStandardMaterial({color:0x8a7040,metalness:.7,roughness:.4})))}
+ return g}
+updExplore=(function(o){return function(dt){o(dt);shots.forEach(s=>{if(s.spin&&s.o)s.o.rotation.x+=dt*22})}})(updExplore);
+
 world.visible=false;toMenu();requestAnimationFrame(loop);
 
 </script>
