@@ -813,5 +813,115 @@ updExplore=(function(o){return function(dt){o(dt);shots.forEach(s=>{if(s.spin&&s
 
 world.visible=false;toMenu();requestAnimationFrame(loop);
 
+
+// ==== v5: CHAPTER II - THE FOUNDRY OF BROTHERS ====
+const POI1=JSON.parse(JSON.stringify(POI));
+const POI2={village:[10,10],well:[4,4],camp:[50,12],hanged:[22,30],shrine:[36,24],chapel:[56,40],ridge:[50,12],oak:[28,6],cart:[8,38],des:[42,40],
+ stable:[7,7],widow:[13,8],merchant:[13,12],chests:[[18,18],[44,6],[30,40],[58,26],[6,26]]};
+function setPOI(src){for(const k in src)POI[k]=JSON.parse(JSON.stringify(src[k]))}
+const isC2=()=>!!(G&&G.x&&G.x.ch===2);
+Object.assign(HEROES,{
+ hessa:{name:'Hessa Kell',title:'The Slag-Ferry Pikewoman',hp:80,mp:0,atk:13,mv:3,rmin:1,rmax:2,
+  bio:'Hessa poled the slag ferry across the burning river for nineteen years. When the Vane foundry needed bodies to cool the great crucible, they took her husband and both her sons. She lost her left arm pulling the last one out. Her ferry pole is now tipped with a slag-forged spike.',
+  motive:'Find the man who signed the order, and push him into the crucible.',flaw:'She has decided she will die in the foundry. She does not guard herself.'},
+ tobin:{name:'Tobin',title:'The Boy Who Speaks for the Dead',hp:40,mp:30,atk:10,mv:4,rmin:2,rmax:3,
+  bio:'A chimney-boy from the foundry orphanage. Since the Ninth Bell rang, a dead woman speaks through his mouth and calls Sera "granddaughter." Tobin remembers nothing she says, only that his throat bleeds after. His scream can split iron.',
+  motive:'Make the voice stop. Or understand why it chose him.',flaw:'He cannot control when she takes over.'}});
+Object.assign(LOOK,{
+ hessa:{skin:0xb08870,cloth:0x3a2418,trim:0xd06a20,hair:0x6a6060,eye:0xffa040,acc:'blade',h:1.05,wide:1.15},
+ tobin:{skin:0xc8a890,cloth:0x2a2420,trim:0x606060,hair:0x1a1410,eye:0xc0e0ff,acc:'none',h:.72},
+ corvin:{skin:0x3a1a10,cloth:0x1a0a06,trim:0xff6a10,hair:0x0a0402,eye:0xffa030,acc:'flame',h:1.75,wide:1.55}});
+groundColor=(function(o){return function(t,h){if(isC2()){if(t===2){_c.setHSL(.05,.9,.16+h*.06);return _c}if(t===0||t===6){_c.setHSL(.06,.15,.07+h*.04);return _c}}return o(t,h)}})(groundColor);
+buildWater=(function(o){return function(w){const n=world.children.length;o(w);if(!isC2())return;for(let i=n;i<world.children.length;i++){const m=world.children[i].material;if(m&&m.emissive){m.color.setHex(0x3a0a02);m.emissive.setHex(0xff5010);m.emissiveIntensity=.9;m.opacity=.95}}}})(buildWater);
+function skyC2(on){scene.background.setHex(on?0x0e0503:0x07040a);scene.fog.color.setHex(on?0x1c0905:0x0a0610)}
+function clearEnts(){ents.forEach(e=>scene.remove(e.o));ents.length=0;shots.forEach(s=>scene.remove(s.o));shots.length=0;['dainNpc','mottNpc','ivoNpc'].forEach(k=>{if(G[k])scene.remove(G[k])})}
+function tint10(e,c,em){e.o.traverse(m=>{if(m.material&&m.material.color){m.material=m.material.clone();m.material.color.setHex(c);if(m.material.emissive)m.material.emissive.setHex(em)}});return e}
+function spawnKind10(kind,x,z,o={}){x=Math.round(x);z=Math.round(z);if(solid(tAt(x,z)))return null;
+ if(kind==='slag')return tint10(spawn('drowned',x,z,Object.assign({hp:34,max:34,dmg:8,spd:2.2,aggro:8,k9:'slag'},o)),0x2a1208,0xff4a08);
+ if(kind==='choir')return tint10(spawn('captain',x,z,Object.assign({hp:70,max:70,dmg:11,spd:2,aggro:7,k9:'knight'},o)),0x30303a,0x101030);
+ return spawn(kind,x,z,o)}
+const npcs10={};
+function setupWorld10(){const x=X9(),P=POI,q=x.q2;clearEnts();for(const k in npcs9){scene.remove(npcs9[k]);delete npcs9[k]}chests9.forEach(c=>scene.remove(c.o));chests9.length=0;
+ for(const k in npcs10){scene.remove(npcs10[k]);delete npcs10[k]}
+ if(horse9)scene.remove(horse9);horse9=makeHorse();horse9.position.set(P.stable[0],0,P.stable[1]);scene.add(horse9);x.mounted=0;
+ P.chests.forEach((c,i)=>{if(x.open2.includes(i))return;const o=makeChest();o.position.set(c[0],0,c[1]);scene.add(o);chests9.push({o,i,x:c[0],z:c[1]})});
+ npcs9.merchant=propNpc('bandit',P.merchant[0],P.merchant[1],1.3);
+ if(!q.hessa)npcs10.hessa=propNpc('hessa',P.shrine[0]+1.5,P.shrine[1]);if(!q.tobin)npcs10.tobin=propNpc('tobin',P.camp[0],P.camp[1]+2.5);
+ if((q.bride||0)<3)npcs10.bride=propNpc('mott',P.oak[0],P.oak[1],.5);if(!q.debt){npcs10.debt=propNpc('captain',P.cart[0],P.cart[1],.6);npcs10.kid=propNpc('tobin',P.cart[0]+1,P.cart[1]+.5,.8)}
+ for(let k=0;k<6;k++)spawnKind10('slag',14+R()*40,14+R()*28);for(let k=0;k<3;k++)spawnKind10('choir',30+R()*25,30+R()*14);for(let k=0;k<4;k++)spawnKind10('hound',20+R()*36,4+R()*40);
+ if(!q.hessa)for(let k=0;k<4;k++)spawnKind10('slag',P.shrine[0]+Math.cos(k*1.6)*3,P.shrine[1]+Math.sin(k*1.6)*3,{home:P.shrine,aggro:7});
+ if(!q.tobin)['choir','bandit','choir'].forEach((k,i)=>spawnKind10(k,P.camp[0]+Math.cos(i*2.1)*4,P.camp[1]+Math.sin(i*2.1)*4,{home:P.camp,aggro:6}))}
+setupWorld9=(function(o){return function(){if(isC2())return setupWorld10();o()}})(setupWorld9);
+newRun=(function(o){return function(){setPOI(POI1);skyC2(false);if(G&&G.x)G.x.ch=1;for(const k in npcs10){scene.remove(npcs10[k]);delete npcs10[k]}o()}})(newRun);
+function enterCh2(){const x=X9();endBattle();x.ch=2;Object.assign(G.f,{camp:1,hounds:2,ivo:2,boss:1});x.q2={};x.c2=0;x.open2=[];x.sDead=0;x.sSp=0;x.zone='';
+ world.visible=true;hero.visible=true;motes.forEach(m=>m.s.visible=true);$('ctl').classList.add('on');$('hud').classList.add('on');
+ setPOI(POI2);skyC2(true);genWorld();setupWorld10();const p=G.p;p.x=POI.village[0];p.z=POI.village[1]+2.5;p.hp=p.max;p.mp=p.mpmax;G.score+=1000;
+ state='explore';music('explore');doShake(.3);saveRun();
+ talk([{n:'Chapter II \u00b7 The Foundry of Brothers',t:'Three days east of the marsh the land turns to ash and the rivers run with slag. The Vane foundry, Sera\'s family foundry, still burns. No one has fed it in nine years.'},
+  {n:'Sera',t:'"The dead woman called me granddaughter. My grandmother poured the Ninth Bell. Whoever keeps her fires lit knows which bell I\'m meant to ring."'},
+  {n:'Ivo Brask',t:'Ivo stares at the chimneys. "My brothers went in there. The foundry said there was an accident. There was no accident."'},
+  {n:'Objective',t:'Ashgate is your new camp: fire, Pell the merchant and a stall for Cinder. The foundry gate is sealed by three bell-iron sigils. Find them across the Cinder Flats. Your progress was saved.'}])}
+victory=(function(o){return function(){if(!isC2())return enterCh2();endBattle();state='end';G.score+=2000+G.party.length*200;finishRun();sfx.clue();const x=X9();
+ $('eT').textContent='The Founder Burns';
+ $('eP').innerHTML='Corvin Vane, your uncle, sinks into his own crucible. As the metal takes him he laughs: <i>"She poured the Ninth with a child inside it, Sera. Your mother. Ring it and she screams."</i><br><br>'+(x.q2.ivoWay==='burned'?'Ivo has not spoken since the pit. He walks behind you now, not beside you.':'Ivo lays the last of his brothers\' bones in the crucible ash and finally lowers his cannon.')+'<br><br>Tobin opens his mouth, and the dead woman speaks once more: <i>"Come to the tower. Come home."</i><br><br><b>Chapter III: The Tower of Nine</b> is coming.';showEnd()}})(victory);
+startBattle=(function(o){return function(){if(!isC2())return o();const keep=G.party;const pick=['sera','hessa','tobin','ivo'].filter(k=>keep.includes(k));['dain','mott'].forEach(k=>{if(pick.length<4&&keep.includes(k))pick.push(k)});
+ G.party=pick.slice(0,4);o();G.party=keep;const b=B.boss;const nb=makeChar('corvin');nb.position.copy(b.o.position);b.o.children.forEach(c=>{if(c.geometry&&c.geometry.type==='RingGeometry')nb.add(c.clone())});bGrp.remove(b.o);b.o=nb;bGrp.add(nb);
+ b.name='Corvin Vane';b.hp=b.max=300;b.atk=15;b.rmax=3;B.units.forEach(u=>{if(u.k==='drowned')u.name='Slag-born'});
+ info('The Great Crucible. Corvin Vane, Master Founder, fused to the pour-chain. Channels of molten slag slow you and weaken your blows. Every third turn more slag-born crawl out of the moulds.')}})(startBattle);
+zoneOf=(function(o){return function(x,z){if(!isC2())return o(x,z);if(Math.hypot(x-POI.chapel[0],z-POI.chapel[1])<9)return['The Vane Foundry',.08];if(x>40&&z<22)return['Chimney Row',.07];if(Math.hypot(x-POI.hanged[0],z-POI.hanged[1])<8)return["The Brothers' Pit",.075];if(x>26)return['The Slag River',.06];return['The Cinder Flats',.05]}})(zoneOf);
+function sigil(t){const x=X9();x.c2++;G.score+=200;sfx.clue();burst(G.p.x,1.2,G.p.z,'rgba(255,150,60,1)',34,4,.4,1.2);gainXP(40);talk([{n:'Bell-iron sigil '+x.c2+' of 3',t}])}
+const homeFoes=(P)=>ents.some(e=>e.team==='foe'&&e.hp>0&&e.home===P&&Math.hypot(e.x-P[0],e.z-P[1])<12);
+function nearN10(k,r=2){const o=npcs10[k];return o&&o.parent&&near(o.position.x,o.position.z,r)}
+function quests10(){if(dlgOpen)return;const x=X9(),q=x.q2,P=POI,r=G.res,p=G.p;
+ if(!q.hessa&&!homeFoes(P.shrine)&&nearN10('hessa',2.4)){q.hessa=1;
+  talk([{n:'Hessa Kell',t:'A one-armed woman leans on a spiked ferry pole over the slag-born she just killed. "You\'re a Vane. I can smell the foundry on you."'},
+   {n:'Sera',t:HEROES.hessa.bio,c:[['"I\'m going to burn the man who gave that order. Come and watch."',()=>{q.hessaWay='vow'}],['Tell her your family signed it, and the debt is yours. (Darker: she hits harder, and hates you.)',()=>{q.hessaWay='debt';HEROES.hessa.atk+=4}]]},
+   {n:'Hessa Kell',t:'She snaps a slag-crusted sigil off the ferry chain and throws it at your feet. "Your uncle hung this here so no one would cross. Lead, Vane."'}],()=>{addHero('hessa',npcs10.hessa);delete npcs10.hessa;
+   sigil('The ferry sigil. Stamped on the back: "Property of Corvin Vane, Master Founder." Your uncle is alive. Next: the Brothers\' Pit, south-west.')})}
+ if(!q.pit&&near(P.hanged[0],P.hanged[1],4)){q.pit=1;for(let k=0;k<4;k++)spawnKind10(k%2?'choir':'slag',P.hanged[0]+Math.cos(k*1.57)*5,P.hanged[1]+Math.sin(k*1.57)*5,{home:P.hanged,aggro:10});music('danger');
+  talk([{n:"The Brothers' Pit",t:'A pit of cooled slag. Shapes are set in it: men, curled up, mouths open. Foundry workers, poured over while still alive.'},{n:'Ivo Brask',t:'"...That one\'s Teodor. That one\'s Pim." His voice is very calm. Then the choir-men come over the rim.'}])}
+ if(q.pit===1&&!homeFoes(P.hanged)&&near(P.hanged[0],P.hanged[1],3)){q.pit=2;
+  talk([{n:'Ivo Brask',t:'Ivo chips at the slag with his knife until his hands bleed.',c:[['Help him dig his brothers out and bury them. (+60 XP, Ivo trusts you)',()=>{q.ivoWay='buried';gainXP(60);HEROES.ivo.atk+=2}],['Burn the dead men\'s ember into yourself. (Darker: +15 max ember, +4 damage. Ivo watches.)',()=>{q.ivoWay='burned';p.mpmax+=15;p.mp=p.mpmax;p.atk+=4}]]}],
+   ()=>sigil('In Teodor\'s fist, set in the slag: the second sigil. He grabbed it before they poured. Next: the orphanage on Chimney Row, north-east.'))}
+}
+function quests10b(){if(dlgOpen)return;const x=X9(),q=x.q2,P=POI,r=G.res,p=G.p,C=P.camp;
+ if(!q.tobin&&!x.sSp&&near(C[0],C[1],8)){x.sSp=1;const h=spawn('hound',C[0],C[1]-2,{hp:260,max:260,dmg:14,spd:3.2,aggro:14,smother:1,home:C});h.o.scale.setScalar(2.4);tint10(h,0x1a0a06,0xff3a08);G.smother=h;
+  music('boss');doShake(.4);if(AC)bell(MI(31),AC.currentTime,.3,fG);talk([{n:'Chimney Row',t:'Children\'s shoes hang from every chimney. Something huge uncurls from the orphanage furnace: a hound of coal and stitched hide, smoke pouring from its ribs.'},{n:'Tobin',t:'A small boy behind the bars speaks in an old woman\'s voice: "Old Smother eats the ones who stop singing. Granddaughter, do not stop."'}])}
+ const s=G.smother;if(s&&!x.sDead){if(!s.p2&&s.hp>0&&s.hp<s.max/2){s.p2=1;s.spd=4.4;for(let k=0;k<3;k++)spawn('hound',s.x+(k-1)*2,s.z+2,{aggro:12});doShake(.5);pop(s.x,s.z,'OLD SMOTHER HOWLS','#f60',true)}
+  if(s.hp<=0||!ents.includes(s)){x.sDead=1;G.score+=600;gainXP(120);r.coin+=50;burst(s.x,1,s.z,'rgba(255,90,20,1)',50,6,.5,1.4);pop(s.x,s.z,'+50 gold','#ffd76a',true)}}
+ if(!q.tobin&&x.sDead&&!homeFoes(C)&&nearN10('tobin',2.4)){q.tobin=1;
+  talk([{n:'Tobin',t:'The boy is maybe nine. His collar is stiff with dried blood. "She talks through me. I don\'t want her to. Are you the one she wants?"'},
+   {n:'Sera',t:HEROES.tobin.bio,c:[['"Come with me. I\'ll make her stop."',()=>{q.tobinWay='kind'}],['Let the voice speak as long as it needs, whatever it costs him. (Darker: Tobin is weaker, you learn more.)',()=>{q.tobinWay='used';HEROES.tobin.hp-=10;HEROES.tobin.atk+=3}]]},
+   {n:'The voice in Tobin',t:()=>q.tobinWay==='used'?'Blood runs from the boy\'s nose. "Corvin swallowed his own key so you would have to cut him open. Ask him what is inside the Ninth."':'"Thank you for being gentle with him. I never was with you."'}],
+   ()=>{addHero('tobin',npcs10.tobin);delete npcs10.tobin;sigil('Under the furnace grate, among small bones: the third sigil. The foundry gate to the south-east will open.')})}
+ if(x.c2>=3&&!q.boss&&near(P.chapel[0],P.chapel[1]+1,2.5)){q.boss=1;saveRun();
+  talk([{n:'The Vane Foundry',t:'The gate grinds open on heat that blisters skin. Chains run up into darkness. At the end of the pour-line, half-melted into the crucible chain, hangs a man with Sera\'s eyes.'},{n:'Corvin Vane',t:'"Little Sera. Mother said you\'d come home. Climb in. The bells are hungry, and you were always the best fuel we had."'}],()=>startBattle())}
+ if(!q.bride&&nearN10('bride')){q.bride=1;talk([{n:'The Ash-Bride',t:'A woman in a burned wedding dress digs in the ash with her hands. "They poured my Aren into the river on our wedding day. He wore a silver bell on a cord. Find it. Please."'}])}
+ if(q.bride===1&&near(P.des[0],P.des[1],2.2)){q.bride=2;sfx.clue();talk([{n:'The cooling pit',t:'A man\'s arm sticks up out of the cooled slag. A silver bell on a cord is wrapped around the wrist. You pry it free.'}])}
+ if(q.bride===2&&nearN10('bride')){q.bride=3;talk([{n:'The Ash-Bride',t:'"You found him?"',c:[['Give her the bell. (+40 XP, +2 tonics)',()=>{gainXP(40);r.tonic+=2}],['Tell her he is gone and sell the bell. (Darker: +50 gold)',()=>{r.coin+=50;q.brideLie=1}]]}],()=>{if(npcs10.bride){scene.remove(npcs10.bride);delete npcs10.bride}})}
+ if(!q.debt&&nearN10('debt',2.2)){q.debt=1;const gone=()=>{['debt','kid'].forEach(k=>{if(npcs10[k]){scene.remove(npcs10[k]);delete npcs10[k]}})};
+  talk([{n:'The Debt-Taker',t:'A foundry debt-taker drags a crying girl by the collar. "Her father died owing nine bells of coal. She works it off in the chimneys."'},
+   {n:'Sera',t:'The girl looks at you.',c:[['Kill him and free her. (He fights. +50 XP)',()=>{q.debtWay='freed';gainXP(50);gone();spawnKind10('choir',P.cart[0]+1,P.cart[1]+1,{aggro:10})}],['Take a cut and walk away. (Darker: +40 gold, she goes to the chimneys)',()=>{q.debtWay='sold';r.coin+=40;gone()}]]}])}
+}
+quests9=(function(o){return function(dt){if(!isC2())return o(dt);quests10();quests10b();if(nearNpc('merchant')){if(!G.x.mc){G.x.mc=1;shop9()}}else G.x.mc=0}})(quests9);
+updExplore=(function(o){return function(dt){if(!isC2()||!G)return o(dt);const x=X9(),s=x.open;x.open=x.open2;try{o(dt)}finally{x.open2=x.open;x.open=s}}})(updExplore);
+objective=(function(o){return function(){if(!isC2())return o();const x=X9(),q=x.q2,P=POI;
+ if(!q.hessa)return['Free the ferrywoman at the Slag Ferry (east)',P.shrine];if((q.pit||0)<2)return["Find Ivo's brothers in the Brothers' Pit (south-west)",P.hanged];
+ if(!q.tobin)return[x.sDead?'Free the boy in the orphanage':'Face what lives in the Chimney Row orphanage (north-east)',P.camp];return['Enter the Vane Foundry and face Corvin Vane',[P.chapel[0],P.chapel[1]+1]]}})(objective);
+questLog=(function(o){return function(){if(!isC2())return o();const x=X9(),q=x.q2,L=[];const st=(d,t)=>L.push(`<div style="margin:6px 0;opacity:${d?.5:1}">${d?'\u2714':'\u25c6'} ${t}</div>`);
+ L.push('<h2>Chapter II: The Foundry of Brothers</h2>');st(q.hessa,'Free Hessa Kell at the Slag Ferry');st(q.pit===2,"Find Ivo's brothers in the Brothers' Pit");st(x.sDead,'Kill Old Smother on Chimney Row');st(q.tobin,'Free Tobin from the orphanage');st(0,'Enter the Vane Foundry and face Corvin Vane');
+ L.push('<h2>Side quests</h2>');st(q.bride===3,q.bride?'The Ash-Bride: '+(q.bride===1?'search the cooling pit (south-east)':q.bride===2?'return to the bride':(q.brideLie?'you lied to her':'you gave her the bell')):'??? (a woman digging in the ash, north)');
+ st(!!q.debt,q.debt?'The Debt of Coal: '+(q.debtWay==='freed'?'the girl is free':'you took your cut'):'??? (raised voices, south-west)');
+ L.push(`<p style="font-size:13px">Sigils: ${x.c2}/3 \u00b7 Chests: ${x.open2.length}/5 \u00b7 Party: ${G.party.map(k=>HEROES[k].name).join(', ')}</p>`);$('qL').innerHTML=L.join('')}})(questLog);
+drawMap=(function(o){return function(){if(!isC2())return o();const c=$('mapc'),g=c.getContext('2d'),s=5;const col={0:'#2a1a14',1:'#1a0e0a',2:'#c04010',3:'#4a4450',4:'#5a4630',5:'#4a3a2c',6:'#2a2018',7:'#3a3440',8:'#3a1a2a'};
+ for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){g.fillStyle=col[map[y*MW+x]]||'#111';g.fillRect(x*s,y*s,s,s)}
+ const dot=(p,cl,l)=>{g.fillStyle=cl;g.beginPath();g.arc(p[0]*s+2,p[1]*s+2,5,0,6.3);g.fill();g.fillStyle='#fff';g.font='bold 10px Georgia';g.fillText(l,p[0]*s+8,p[1]*s+5)};
+ dot(POI.village,'#ff9a40','Ashgate');dot(POI.shrine,'#ff6020','Ferry');dot(POI.hanged,'#a0a0a0','Pit');dot(POI.camp,'#c03030','Orphanage');dot(POI.chapel,'#ffd040','Foundry');
+ g.fillStyle='#fff';g.beginPath();g.arc(G.p.x*s+2,G.p.z*s+2,4,0,6.3);g.fill();$('mapk').textContent='Objective: '+objective()[0]}})(drawMap);
+loadRun=(function(o){return function(){const s=JSON.parse(localStorage.getItem(XK)||'null');if(s&&s.ch===2){setPOI(POI2);skyC2(true);if(G)G.x=Object.assign(X9(),s,{mounted:0,mc:0,zone:""})}o();
+ if(isC2()){$('bH').style.display=G.x.horse?'flex':'none';hud()}}})(loadRun);
+(function(){const mp=$('mPlay');const c=document.createElement('button');c.className='btn';c.textContent='Chapter II: The Foundry';mp.parentNode.insertBefore(c,mp.nextSibling);
+ c.onclick=()=>{initAudio();mp.onclick();const x=X9();G.clues=3;G.f.well=1;G.f.camp=1;G.f.hounds=2;G.f.ivo=2;G.f.boss=1;x.hDead=1;x.hSp=1;x.horse=1;G.party=['sera','dain','mott','ivo'];
+  G.wep=['dagger','bow','cannon'];G.p.mp=G.p.mpmax;x.lvl=4;G.p.max+=30;G.p.atk+=6;G.p.mpmax+=15;G.res.coin+=60;dlgOpen=false;$('dlg').classList.remove('on');enterCh2()}})();
 </script>
 </body></html>
