@@ -1311,4 +1311,79 @@ const _ub=updBattle;updBattle=function(dt){_ub(dt);if(!T||!B||!B.tut)return;lock
 const _tm=toMenu;toMenu=function(){if(T){T=null;cdiv.classList.remove('on');unlockUI()}return _tm.apply(this,arguments)};
 })();
 </script>
+<script>
+/* ==== Audit pass 1: sound, graphics, UI polish ==== */
+(function(){
+// --- SOUND: subtle pitch variation on every SFX so repeats don't sound robotic
+const _tone=tone;tone=function(f,t,d,o){if(o&&o.out===fG)f*=1+(Math.random()-.5)*.08;return _tone(f,t,d,o)};
+const t0=()=>AC&&AC.currentTime;
+Object.assign(sfx,{
+ click(){AC&&(tone(1400,t0(),.05,{g:.05,out:fG,wet:0,a:.001}),tone(700,t0()+.02,.06,{g:.04,out:fG,wet:0,a:.001}))},
+ back(){AC&&tone(500,t0(),.08,{g:.05,out:fG,wet:0,fe:300})},
+ crit(){AC&&(noise(t0(),.25,{g:.6,f:5000,type:'highpass',wet:.4}),tone(1800,t0(),.4,{type:'square',g:.05,fe:400,out:fG,q:3000}),tone(60,t0(),.5,{g:.6,fe:28,out:fG,wet:.2}))},
+ taunt(){AC&&(tone(110,t0(),.6,{type:'sawtooth',g:.18,q:500,out:fG,wet:.5}),tone(82,t0()+.05,.7,{type:'sawtooth',g:.14,q:400,out:fG,wet:.5}),noise(t0(),.3,{g:.2,f:300}))},
+ shield(){AC&&[64,71,76].forEach((n,i)=>tone(MI(n),t0()+i*.04,1.1,{type:'triangle',g:.07,out:fG,wet:.9}))},
+ poison(){AC&&[0,.08,.16].forEach(d=>tone(300+Math.random()*200,t0()+d,.12,{g:.06,fe:120,out:fG,wet:.3}))},
+ whisper(){AC&&(noise(t0(),.9,{g:.25,f:2200,type:'bandpass',wet:1}),tone(MI(81),t0(),.9,{g:.03,out:fG,wet:1,a:.3}))},
+ turnP(){AC&&(bell(MI(62),t0(),.1,fG),bell(MI(69),t0()+.12,.07,fG))},
+ turnE(){AC&&(tone(MI(38),t0(),.8,{type:'sawtooth',g:.12,q:300,out:fG,wet:.6}),tone(MI(39),t0()+.1,.8,{type:'sawtooth',g:.08,q:300,out:fG,wet:.6}))},
+ win(){AC&&[50,57,62,66,69,74].forEach((n,i)=>{tone(MI(n),t0()+i*.12,1.8,{type:'triangle',g:.07,out:fG,wet:.9});if(i==5)bell(MI(62),t0()+.7,.2,fG)})},
+ lose(){AC&&[57,56,53,50,45].forEach((n,i)=>tone(MI(n),t0()+i*.25,1.4,{type:'sawtooth',g:.05,q:700,out:fG,wet:.8}))}
+});
+// ability-specific sounds
+const AFX={taunt:'taunt',wall:'shield',ward:'shield',poison:'poison',whisper:'whisper'};
+const _ua=useAb;useAb=async function(u,i,x,y){try{const a=AB[u.k][i];AFX[a.fx]&&sfx[AFX[a.fx]]()}catch(e){}return _ua.apply(this,arguments)};
+// crit sound + screen flash
+const fl=document.createElement('div');fl.id='aflash';document.body.appendChild(fl);
+function flash(c,ms){fl.style.background=c;fl.style.transition='none';fl.style.opacity=.55;requestAnimationFrame(()=>{fl.style.transition='opacity '+ms+'ms';fl.style.opacity=0})}
+const _pop=pop;pop=function(x,y,txt,col,big){if(typeof txt==='string'&&txt.indexOf('CRIT')===0){sfx.crit();flash('radial-gradient(circle,rgba(255,90,255,.0),rgba(255,60,220,.5))',380)}return _pop.apply(this,arguments)};
+// UI click sound on every button
+document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('button,.btn');if(b&&!b.disabled){initAudio();sfx.click()}},true);
+// --- UI: turn banners
+const bn=document.createElement('div');bn.id='tbanner';document.body.appendChild(bn);
+function banner(t,c){bn.textContent=t;bn.style.color=c;bn.classList.remove('go');void bn.offsetWidth;bn.classList.add('go')}
+let lastPh='';
+const _ub=updBattle;updBattle=function(dt){_ub(dt);if(!B)return;if(B.phase!==lastPh){if(B.phase==='player'&&lastPh){banner('YOUR TURN','#ffd98a');sfx.turnP()}else if(B.phase==='enemy'){banner(B.tut?'ENEMY TURN':'THE DROWNED MOVE','#ff6a5a');sfx.turnE();flash('radial-gradient(circle,rgba(0,0,0,0),rgba(140,0,20,.45))',600)}lastPh=B.phase}};
+const _v=victory;victory=function(){sfx.win();flash('radial-gradient(circle,rgba(255,220,140,.5),rgba(255,140,40,0))',900);lastPh='';return _v.apply(this,arguments)};
+const _g=gameOver;gameOver=function(){sfx.lose();lastPh='';return _g.apply(this,arguments)};
+// --- GRAPHICS: cinematic vignette + film grain overlay (cheap, CSS-only)
+const vg=document.createElement('div');vg.id='avig';document.body.appendChild(vg);
+const css=document.createElement('style');css.textContent=`
+#avig{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 55%,rgba(5,0,4,.55) 100%)}
+#avig:after{content:'';position:absolute;inset:-50%;opacity:.05;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>");animation:grain 1s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}}
+#aflash{position:fixed;inset:0;pointer-events:none;z-index:9;opacity:0}
+#tbanner{position:fixed;left:0;right:0;top:38%;z-index:8;text-align:center;pointer-events:none;font:bold clamp(26px,8vw,46px) Georgia,serif;letter-spacing:6px;opacity:0;text-shadow:0 0 20px currentColor,0 2px 4px #000}
+#tbanner.go{animation:tbn 1.3s ease-out}
+@keyframes tbn{0%{opacity:0;transform:scale(1.4);letter-spacing:18px}20%{opacity:1;transform:scale(1);letter-spacing:6px}75%{opacity:1}100%{opacity:0;transform:translateY(-20px)}}
+.btn,#bt button,.row button,#dlg .ch button{transition:transform .08s,filter .15s,box-shadow .2s}
+.btn:hover,#bt button:not(:disabled):hover{box-shadow:0 0 22px rgba(255,140,60,.5)}
+#bt .info{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 0 18px rgba(0,0,0,.6) inset}
+#dlg{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+@media (prefers-reduced-motion:reduce){#avig:after{animation:none}#tbanner.go{animation-duration:.01s}}
+`;document.head.appendChild(css);
+})();
+</script>
+<script>
+/* ==== Audit pass 2: danger feedback, mobile audio hygiene, quick mute ==== */
+(function(){
+// pause audio when app is backgrounded (mobile battery + no ghost music)
+document.addEventListener('visibilitychange',()=>{if(!AC)return;document.hidden?AC.suspend():AC.resume()});
+// quick mute toggle
+const m=document.createElement('button');m.id='amute';m.setAttribute('aria-label','Toggle sound');
+const set=()=>{m.textContent=(S.mu+S.fx)>0?'\u{1F50A}':'\u{1F507}'};set();
+m.onclick=e=>{e.stopPropagation();if((S.mu+S.fx)>0){S._mu=S.mu;S._fx=S.fx;S.mu=0;S.fx=0}else{S.mu=S._mu||60;S.fx=S._fx||80}save();vol();set()};
+document.body.appendChild(m);
+// low-health heartbeat + red edge pulse in battle
+const edge=document.createElement('div');edge.id='aedge';document.body.appendChild(edge);
+let hb=0;
+const _ub=updBattle;updBattle=function(dt){_ub(dt);if(!B||B.phase==='over'){edge.style.opacity=0;return}
+ const low=B.units.filter(u=>u.team==='hero'&&u.hp>0&&u.hp<u.max*.3).length;edge.style.opacity=low?.5+.3*Math.sin(performance.now()/220):0;
+ if(low&&AC&&(hb-=dt)<=0){hb=1.1;const t=AC.currentTime;tone(55,t,.18,{g:.35,fe:38,out:fG,wet:0,a:.003});tone(52,t+.22,.18,{g:.25,fe:36,out:fG,wet:0,a:.003})}};
+const css=document.createElement('style');css.textContent=`
+#amute{position:fixed;z-index:20;left:14px;top:calc(env(safe-area-inset-top) + 144px);width:40px;height:40px;border-radius:50%;border:1px solid rgba(232,194,122,.5);background:rgba(20,6,8,.7);color:#fff;font-size:18px;touch-action:manipulation;opacity:.75}
+#aedge{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;box-shadow:inset 0 0 90px 20px rgba(200,0,20,.7)}
+`;document.head.appendChild(css);
+})();
+</script>
 </body></html>
